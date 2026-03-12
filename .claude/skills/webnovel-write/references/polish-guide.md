@@ -1,21 +1,22 @@
 ---
 name: polish-guide
-purpose: 章节生成后的润色阶段加载，基于审查报告修复问题 + 强化网文口感
-version: "6.0"
+purpose: 章节生成后的润色阶段加载，基于审查报告修复问题 + 强化网文口感 + AI 味去除
+version: "7.0"
 ---
 
 <context>
-此文件用于 Step 4 润色阶段，目标是“修问题”而非“重写剧情”。
+此文件用于 Step 4 润色阶段，目标是"修问题"而非"重写剧情"。
 
-输入来自两部分：
+输入来自三部分：
 1. 章节正文（Step 2A/2B 输出）
 2. 审查报告（Step 3 聚合结果）
+3. AI 味检测报告（AI-Trace Checker 输出）
 
 与 Step 2B 的职责边界：
 - Step 2B：风格转译（表达层）
-- Step 4：问题修复（质量层），包括审查问题修复、Anti-AI 终检、毒点规避
+- Step 4：问题修复（质量层），包括审查问题修复、AI 味去除、毒点规避
 
-若已执行 Step 2B，本步骤不重复全量句式改写，只做“必要修改”。
+若已执行 Step 2B，本步骤不重复全量句式改写，只做"必要修改"。
 </context>
 
 <instructions>
@@ -37,12 +38,66 @@ version: "6.0"
 ## 2. 执行顺序（必须按序）
 
 1. 修复审查报告中的问题（先 `critical/high`）
-2. 校验网文化 Hard/Soft/Style 规则
-3. 执行 Phase 1 Anti-AI 终检并改写
-4. 执行 No-Poison 毒点规避检查
-5. 输出润色结果与 deviation（若有）
+2. **调用 AI 味检查 Agent，输出 AI 味指数**
+3. 修复 AI 味 P0/P1 问题（目标 AI 味指数<30）
+4. 校验网文化 Hard/Soft/Style 规则
+5. 执行 Phase 1 Anti-AI 终检并改写
+6. 执行 No-Poison 毒点规避检查
+7. 输出润色结果与 deviation（若有）
 
-## 2A. Anti-AI 检测细则（对应执行顺序第 3 步）
+## 2A. AI 味检查 Agent 集成（新增）
+
+> 本节为 Step 4 必执行环节，由 AI-Trace Checker 自动输出报告。
+
+### AI 味指数计算
+
+| 维度 | 权重 | 计算方式 |
+|------|------|----------|
+| 解释过多 | 15% | 出现次数 × 3 |
+| 情感标签 | 15% | 出现次数 × 3 |
+| 句式单一 | 10% | (1-短句占比) × 20 |
+| 书面比喻 | 15% | 出现次数 × 3 |
+| 信息倾倒 | 15% | 出现次数 × 3 |
+| 对话标签 | 10% | 出现次数 × 2 |
+| 逻辑过密 | 10% | 出现次数 × 2 |
+| 被动语态 | 10% | 被动句占比 × 20 |
+
+**合格线**: AI 味指数 < 30
+**优秀线**: AI 味指数 < 20
+
+### 修复优先级
+
+| 优先级 | 问题类型 | 修复策略 |
+|--------|----------|----------|
+| **P0** | 解释过多 + 情感标签 | 必须修复，换成生理反应/行为 |
+| **P1** | 书面比喻 + 信息倾倒 | 建议修复，融入动作发现 |
+| **P2** | 句式单一 + 对话标签 | 择优修复，调整节奏 |
+
+### 输出要求
+
+Step 4 必须输出：
+- `ai_trace_index`: AI 味指数（0-100）
+- `ai_trace_pass`: true/false（<30 为 true）
+- `ai_trace_fixes`: 修复次数
+
+### 示例
+
+```json
+{
+  "ai_trace_index": 24,
+  "ai_trace_pass": true,
+  "ai_trace_fixes": {
+    "explanation_removed": 3,
+    "emotion_replaced": 2,
+    "metaphor_improved": 1,
+    "info_dump_split": 1
+  }
+}
+```
+
+---
+
+## 2B. Anti-AI 检测细则（对应执行顺序第 5 步）
 
 > 词频统计**仅作为提醒**，不再作为硬性门槛。若明显超标，需修复并简要说明。  
 > 说明：即使词频仅作提醒，若最终文本仍有明显 AI 模板痕迹，`anti_ai_force_check` 仍应判定为 `fail`。
@@ -269,6 +324,9 @@ version: "6.0"
 - critical_fixed: N
 - high_fixed: N
 - medium_low_fixed: N
+- ai_trace_index: X (目标<30)
+- ai_trace_pass: true/false
+- ai_trace_fixes: {explanation_removed: N, emotion_replaced: N, ...}
 - anti_ai_rewrites: N
 - anti_ai_force_check: pass/fail
 - poison_risk: pass/fail
@@ -276,7 +334,7 @@ version: "6.0"
   - {location}: {reason}
 ```
 
-若 `critical` 未清零，必须显式标注“未通过”，并返回 Step 4 继续修复。
+若 `critical` 未清零或 `ai_trace_pass` 为 false，必须显式标注"未通过"，并返回 Step 4 继续修复。
 
 </instructions>
 
