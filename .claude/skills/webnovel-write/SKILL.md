@@ -81,7 +81,11 @@ allowed-tools: Read Write Edit Grep Bash Task
 ### writing（问题定向加读）
 
 - `references/writing/combat-scenes.md`
-  - 触发：战斗章或审查命中“战斗可读性/镜头混乱”。
+  - 触发：战斗章或审查命中"战斗可读性/镜头混乱"。
+  - 替代：优先调用 `combat-scene-optimizer` agent
+- `../../references/combat-writing-guide.md`
+  - 用途：战斗描写技巧指南（三回合原则/五感并用/视角转换）
+  - 触发：Step 2A 检测到战斗场景时必读
 - `references/writing/dialogue-writing.md`
   - 触发：审查命中 OOC、对话说明书化、对白辨识差。
 - `references/writing/emotion-psychology.md`
@@ -182,6 +186,25 @@ cat "${CLAUDE_PLUGIN_ROOT}/skills/webnovel-write/references/style-adapter.md"
 输出：
 - 风格化正文（覆盖原章节文件）。
 
+### Step 2C：战斗场景优化（可选，当检测到战斗时自动调用）
+
+**触发条件**：
+- 检测到章节包含战斗场景（关键词：攻击/战斗/击杀/匕首/水晶杖/流光/惨叫/鲜血）
+- 战斗场景字数 > 300 字
+
+**执行前加载**：
+```bash
+cat "${CLAUDE_PLUGIN_ROOT}/../../references/combat-writing-guide.md"
+```
+
+**执行方式**：
+- 使用 Task 调用 `combat-scene-optimizer` agent
+- 或手动应用战斗描写技巧（三回合原则/五感并用/视角转换）
+
+**输出**：
+- 优化后的战斗场景（覆盖原章节文件中的战斗段落）
+- 战斗优化报告（可选）
+
 ### Step 3：审查（auto 路由，必须由 Task 子代理执行）
 
 执行前加载：
@@ -203,6 +226,11 @@ cat "${CLAUDE_PLUGIN_ROOT}/skills/webnovel-write/references/step-3-review-gate.m
 - `reader-pull-checker`
 - `high-point-checker`
 - `pacing-checker`
+- `combat-scene-optimizer`（当章节包含战斗场景时）
+
+**战斗场景检测**：
+- 检测关键词：攻击/战斗/击杀/匕首/水晶杖/流光/惨叫/鲜血
+- 当战斗场景字数 > 300 字时，自动调用 `combat-scene-optimizer`
 
 模式说明：
 - 标准/`--fast`：核心 3 个 + auto 命中的条件审查器
@@ -234,6 +262,40 @@ cat "${CLAUDE_PLUGIN_ROOT}/skills/webnovel-write/references/writing/typesetting.
 输出：
 - 润色后正文（覆盖章节文件）
 - 变更摘要（至少含：修复项、保留项、deviation、`anti_ai_force_check`）
+
+### Step 4.5：写作风格检测（新增）
+
+执行前必须加载：
+```bash
+cat "${CLAUDE_PLUGIN_ROOT}/agents/writing-style-checker.md"
+```
+
+调用方式：
+```bash
+Task: writing-style-checker
+参数：
+- chapter: {chapter_num}
+- project_root: ${PROJECT_ROOT}
+```
+
+检测清单：
+- [ ] 无比喻句（火山/心湖/石子/湖面/针刺/羽毛/重锤等）
+- [ ] 无情绪暗示（闪过/闪烁/带着 xx 意味）
+- [ ] 无惰性状态描述（不容/不易/难以/不可置信）
+- [ ] 无动物比喻（像一只 XX）
+- [ ] 无平衡句式（不是…而是…/不仅…更是…）
+- [ ] 无总结性名词化（这个动作/这句话）
+- [ ] 无眼神/眼底描写
+- [ ] 无嘴角/指节描写
+- [ ] 少用介词连词副词（的/虽然/但是/因为/所以/而/也）
+
+结果处理：
+- 通过 → 进入 Step 5
+- 不通过 → 返回 Step 4 重新润色
+
+输出：
+- 写作风格检测报告（JSON 格式）
+- 问题列表及修改建议
 
 ### Step 5：Data Agent（状态与索引回写）
 
@@ -276,8 +338,9 @@ git commit -m "Ch{chapter_num}: {title}"
 2. Step 3 已产出 `overall_score` 且 `review_metrics` 成功落库
 3. Step 4 已处理全部 `critical`，`high` 未修项有 deviation 记录
 4. Step 4 的 `anti_ai_force_check=pass`（基于全文检查；fail 时不得进入 Step 5）
-5. Step 5 已回写 `state.json`、`index.db`、`summaries/ch{chapter_padded}.md`
-6. 若开启性能观测，已读取最新 timing 记录并输出结论
+5. Step 4.5 写作风格检测通过（无 high 级别问题）
+6. Step 5 已回写 `state.json`、`index.db`、`summaries/ch{chapter_padded}.md`
+7. 若开启性能观测，已读取最新 timing 记录并输出结论
 
 ## 验证与交付
 
