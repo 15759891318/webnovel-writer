@@ -19,7 +19,10 @@
       "Bash(cat:*)",
       "WebFetch(domain:jokester.gitbooks.io)",
       "Skill(webnovel-write)",
-      "Bash(chcp:*)"
+      "Bash(chcp:*)",
+      "Bash(ls:*)",
+      "Bash(cmd:*)",
+      "Bash(cd:*)"
     ]
   }
 }
