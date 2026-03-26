@@ -344,6 +344,7 @@
 │   ├── claude-code-call-matrix.md  # Claude Code 调用矩阵
 │   ├── creativity-constraints.md  # 创意约束完全手册
 │   ├── market-trends-2026.md  # 市场扫描模板
+│   ├── sanjiao-style-guide.md  # 三九音域风格写作指南 (新增)
 │   └── anti-trope-library/  # 反套路库
 │       ├── anti-trope-xianxia.md
 │       ├── anti-trope-rules-mystery.md
@@ -409,41 +410,85 @@
 
 ## 写作工作流 (Step 1-6 增强版)
 
+### 标准工作流（通用）
+
 ```
 Step 1: Context Agent 搜集上下文
-        ↓ 
+        ↓
         输出：创作任务书（含追读力策略、创意约束检查、债务状态）
-        
-Step 1.5: 章节设计（按需）
-        ↓ 
-        设计：开头钩子/核心冲突/爽点分布/微兑现/结尾悬念
-        
+
+Step 1.5: 伏笔检查 (foreshadowing-manager) ← 新增
+        ↓
+        检查：当前活跃伏笔、逾期伏笔、建议回收
+        输出：伏笔管理报告
+
 Step 2A: 生成粗稿
-        ↓ 
+        ↓
         要求：严格遵循大纲，实时对照设定百科
-        
-Step 2B: 风格适配器 (Style Adapter)
-        ↓ 
+
+Step 2B: 风格适配器 (Style Adapter / sanjiao-style-adapter)
+        ↓
         处理：去 AI 味润色、感官描写强化、节奏调整
-        
+        【三九音域风格】：调用 sanjiao-style-adapter 进行深度处理
+
+Step 2C: 对话优化器 (dialogue-optimizer) ← 新增（三九风格专用）
+        ↓
+        处理：消除单调标签、添加动作/神态、角色语言个性化
+
 Step 3: 多 Agent 审查
-        ↓ 
-        默认 4 Agent: reader-pull-checker, plot-architect, 
+        ↓
+        默认 4 Agent: reader-pull-checker, plot-architect,
                     character-psychologist, cool-point-designer
         关键章扩展到 6 Agent: + style-adapter, world-builder
         输出：review_metrics 存入 .webnovel/review_metrics/
-        
+
 Step 4: 网文化润色
-        ↓ 
+        ↓
+        如有战斗场景：调用 combat-scene-optimizer
         优化：段落拆分、对话精炼、钩子强化、断章艺术
-        
+
 Step 5: Data Agent 处理数据链
-        ↓ 
+        ↓
         操作：更新 index.db (伏笔/爽点/债务/设定变动)
-        
+        伏笔入库/更新状态
+
 Step 6: Git 备份
-        ↓ 
+        ↓
         提交：章节正文 + 审查报告 + 数据库快照
+```
+
+### 三九音域风格专用工作流
+
+**适用项目**：《我在精神病院学斩神》、《我不是戏神》风格仿写
+
+```
+Step 1: Context Agent 搜集上下文
+        ↓
+Step 1.5: 伏笔检查 (foreshadowing-manager)
+        ↓
+Step 2A: 生成粗稿（严格遵循大纲）
+        ↓
+Step 2B: 三九音域风格适配 (sanjiao-style-adapter)
+        │ - 句式重构（单句≤30 字）
+        │ - 标点优化（破折号/省略号/感叹号）
+        │ - 段落拆分（≤5 行）
+        │ - 感官强化（五感描写）
+        ↓
+Step 2C: 对话优化 (dialogue-optimizer)
+        │ - 消除"他说/她说"
+        │ - 添加动作/神态描写
+        │ - 角色语言个性化
+        ↓
+Step 3: 多 Agent 审查（4-6 Agent）
+        ↓
+Step 4: 网文化润色
+        │ - 如有战斗：combat-scene-optimizer
+        │ - 战斗三回合结构
+        │ - 五感并用描写
+        ↓
+Step 5: Data Agent（伏笔入库）
+        ↓
+Step 6: Git 备份
 ```
 
 ### Step 1.5 章节设计模板

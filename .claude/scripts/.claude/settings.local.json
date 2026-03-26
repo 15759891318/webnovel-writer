@@ -22,7 +22,8 @@
       "Bash(chcp:*)",
       "Bash(ls:*)",
       "Bash(cmd:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(done)"
     ]
   }
 }
